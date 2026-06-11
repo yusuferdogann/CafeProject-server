@@ -30,12 +30,15 @@ app.use(globalRateLimiter);
 app.use(express.json({ limit: env.BODY_LIMIT }));
 
 app.get("/api/health", (_req, res) => {
+  const dbConnected = isDbReady();
   res.json({
     status: "ok",
     message: "Cafe API is running",
     environment: env.NODE_ENV,
-    database: getDatabaseLabel(),
     provider: env.DB_PROVIDER,
+    database: getDatabaseLabel(),
+    dbConnected,
+    skipDb: env.SKIP_DB,
   });
 });
 

@@ -46,7 +46,7 @@ Kontrol listesi:
 | `SKIP_DB` | `false` |
 | `NODE_ENV` | `production` |
 | `JWT_SECRET` | 32+ karakter |
-| `CORS_ORIGIN` | `http://89.35.73.3` |
+| `CORS_ORIGIN` | `http://89.35.73.3,http://localhost:5173,http://127.0.0.1:5173` |
 
 > MongoDB kullanilmiyor. `MONGODB_URI` veya `DB_PROVIDER=mongodb` **yazmayin**.
 

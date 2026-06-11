@@ -18,28 +18,51 @@ const DEV_BUSINESS = {
   slug: "cafe-project",
 };
 
-const DEV_USERS = [
+const TENANT_SEEDS = [
   {
-    id: "dev-admin",
-    businessId: DEV_BUSINESS.id,
-    name: "Admin",
-    email: "admin@gmail.com",
-    password: "1234",
-    role: "admin",
-    active: true,
+    name: "Rahim",
+    email: "rahim@gmail.com",
+    slug: "rahim-cafe",
+    businessName: "Rahim Cafe",
   },
   {
-    id: "dev-garson",
-    businessId: DEV_BUSINESS.id,
-    name: "Garson",
-    email: "garson@gmail.com",
-    password: "1234",
-    role: "garson",
-    active: true,
+    name: "Yusuf",
+    email: "yusuf@gmail.com",
+    slug: "yusuf-cafe",
+    businessName: "Yusuf Cafe",
+  },
+  {
+    name: "Mustafa",
+    email: "mustafa@gmail.com",
+    slug: "mustafa-cafe",
+    businessName: "Mustafa Cafe",
   },
 ];
 
+const DEV_USERS = TENANT_SEEDS.map((tenant) => ({
+  id: `dev-${tenant.slug}`,
+  businessId: `dev-${tenant.slug}`,
+  name: tenant.name,
+  email: tenant.email,
+  password: "1234",
+  role: "admin",
+  active: true,
+  businessName: tenant.businessName,
+  businessSlug: tenant.slug,
+}));
+
 const devUsers = DEV_USERS.map((user) => ({ ...user }));
+
+function settingsForBusiness(businessName) {
+  return {
+    ...defaultCafeSettings,
+    brand: {
+      ...defaultCafeSettings.brand,
+      title: businessName,
+      subtitle: `${businessName} — dijital menu ve masa yonetimi`,
+    },
+  };
+}
 
 function sanitizeDevUser(user) {
   const { password, ...safeUser } = user;
@@ -61,46 +84,46 @@ function createTrialSubscription() {
   };
 }
 
-export async function seedDefaults() {
-  if (!isDbReady()) return;
-
-  let business = await findBusinessBySlug("cafe-project");
+async function seedTenant(tenant) {
+  let business = await findBusinessBySlug(tenant.slug);
   if (!business) {
     business = await createBusiness({
-      name: "Cafe Project",
-      slug: "cafe-project",
-      settings: defaultCafeSettings,
+      name: tenant.businessName,
+      slug: tenant.slug,
+      settings: settingsForBusiness(tenant.businessName),
       subscription: createTrialSubscription(),
     });
-    console.log("Seed: isletme olusturuldu");
+    console.log(`Seed: isletme olusturuldu — ${tenant.businessName}`);
   } else {
     const patch = {};
-    if (!business.settings) patch.settings = defaultCafeSettings;
+    if (!business.settings) patch.settings = settingsForBusiness(tenant.businessName);
     if (!business.subscription?.currentPeriodEnd) {
       patch.subscription = createTrialSubscription();
     }
     if (Object.keys(patch).length) {
       business = await patchBusiness(business.id, patch);
-      console.log("Seed: isletme varsayilanlari guncellendi");
+      console.log(`Seed: ${tenant.businessName} varsayilanlari guncellendi`);
     }
   }
 
-  const defaults = [
-    { name: "Admin", email: "admin@gmail.com", password: "1234", role: "admin" },
-    { name: "Garson", email: "garson@gmail.com", password: "1234", role: "garson" },
-  ];
+  const exists = await findUserByEmailInBusiness(business.id, tenant.email);
+  if (exists) return;
 
-  for (const item of defaults) {
-    const exists = await findUserByEmailInBusiness(business.id, item.email);
-    if (exists) continue;
-    await createUser({
-      businessId: business.id,
-      name: item.name,
-      email: item.email,
-      passwordHash: await hashPassword(item.password),
-      role: item.role,
-    });
-    console.log(`Seed: ${item.email} olusturuldu`);
+  await createUser({
+    businessId: business.id,
+    name: tenant.name,
+    email: tenant.email,
+    passwordHash: await hashPassword("1234"),
+    role: "admin",
+  });
+  console.log(`Seed: ${tenant.email} olusturuldu`);
+}
+
+export async function seedDefaults() {
+  if (!isDbReady()) return;
+
+  for (const tenant of TENANT_SEEDS) {
+    await seedTenant(tenant);
   }
 }
 
@@ -113,7 +136,7 @@ export function findDevUser(email, password) {
   return sanitizeDevUser(user);
 }
 
-export function listDevEmployees(businessId = DEV_BUSINESS.id) {
+export function listDevEmployees(businessId) {
   return devUsers
     .filter((user) => user.role === "garson" && user.businessId === businessId)
     .map(sanitizeDevUser);
@@ -169,4 +192,4 @@ export function deleteDevEmployee(id, businessId) {
   return true;
 }
 
-export { DEV_BUSINESS };
+export { DEV_BUSINESS, TENANT_SEEDS };

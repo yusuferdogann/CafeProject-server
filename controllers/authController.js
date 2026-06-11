@@ -36,8 +36,8 @@ export async function login(req, res) {
         email: devUser.email,
         role: devUser.role,
         businessId: devUser.businessId,
-        businessName: DEV_BUSINESS.name,
-        businessSlug: DEV_BUSINESS.slug,
+        businessName: devUser.businessName || DEV_BUSINESS.name,
+        businessSlug: devUser.businessSlug || DEV_BUSINESS.slug,
       },
     });
   }
